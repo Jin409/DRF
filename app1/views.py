@@ -1,12 +1,12 @@
 from decimal import BasicContext
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Article
 from .serializers import ArticleSerializer
 
-from rest_framework import generics, mixins,status
+from rest_framework import generics, mixins,status, viewsets
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
 from rest_framework.parsers import JSONParser
 from rest_framework.decorators import api_view
@@ -19,6 +19,26 @@ from http.client import HTTPResponse
 
 # method based views => class based views => mixins & generics
 # simply / better
+
+class ArticleViewSet(viewsets.ViewSet):
+    def list(self,request):
+        articles = Article.objects.all()
+        serializer = ArticleSerializer(articles,many=True)
+        return Response(serializer.data)
+
+    def create(self,request):
+        serializer = ArticleSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self,request,pk=None):
+        queryset = Article.objects.all()
+        article = get_object_or_404(queryset,pk=pk)
+        serializer = ArticleSerializer(article)
+        return Response(serializer.data)
 
 class GenericAPIView(generics.GenericAPIView,mixins.ListModelMixin,
                      mixins.DestroyModelMixin, mixins.UpdateModelMixin, mixins.CreateModelMixin,
